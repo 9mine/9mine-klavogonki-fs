@@ -9,7 +9,7 @@ service:
 
 fs: |
     {% include './common.j2' %}
-    wrapper_name: hello
+    wrapper_name: klavogonki_fs
     ## | 
     fs:
     "/":
