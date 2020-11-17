@@ -1,0 +1,29 @@
+image:
+  repository: dievri/9mine-klavogonki-fs
+  pullPolicy: Always
+  tag: "main"
+
+service:
+  type: ClusterIP
+  port: 2525
+
+fs: |
+    {% include './common.j2' %}
+    wrapper_name: hello
+    ## | 
+    fs:
+    "/":
+        readdir: node /tmp/get_top.js | grep 'href=' | awk 'match($0,/showProfile\([[:digit:]]+\)/) { print substr($0,RSTART+12,RLENGTH-13)}'
+        getattr: *dir
+        "/[^/]+":
+        name: id_name
+        getattr: *dir
+        readdir: curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | .name' | sed 's/ /_/g'
+        "/[^/]+":
+            name: gametype_name
+            # read_file: 
+            read_file: |
+            newname=$(echo -n ${gametype_name} | sed --expression='s/_/ /g')
+            curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | select(.name == "'${newname}'") | .info.best_speed' 
+            getattr: *file
+
