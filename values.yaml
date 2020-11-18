@@ -21,9 +21,9 @@ fs: |
           readdir: curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | .name' | sed 's/ /_/g'
           "/[^/]+":
             name: gametype_name
-            # read_file: 
+            getattr: *file
             read_file: |
               newname=$(echo -n ${gametype_name} | sed --expression='s/_/ /g')
               curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | select(.name == "'${newname}'") | .info.best_speed' 
-              getattr: *file
+              
 
