@@ -23,7 +23,7 @@ fs: |
             name: gametype_name
             getattr: *file
             read_file: |
-              newname=$(echo -n ${gametype_name} | sed --expression='s/_/ /g')
-              curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | select(.name == "'${newname}'") | .info.best_speed' 
+              newname="$(echo -n ${gametype_name} | sed --expression='s/_/ /g')"
+              curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | select(.name == "'"${newname}"'") | .info.best_speed' 
               
 
