@@ -19,6 +19,63 @@ fs: |
           cat<<EOF | nodejs |  grep 'href=' | awk 'match($0,/showProfile\([[:digit:]]+\)/) { print substr($0,RSTART+12,RLENGTH-13)}'
           const puppeteer = require('puppeteer'); (async () => { try { const browser = await puppeteer.launch({ args: ['--lang=ru-RU,ru', '--no-sandbox'] }); const page = await browser.newPage(); await page.goto("http://klavogonki.ru"); await page.waitForSelector('.ng-binding', 0); const body = await page.evaluate(() => { return document.getElementById("top_today").innerHTML; }); process.stdout.write(body); await browser.close(); } catch (error) { console.log(error); }; })();
           EOF
+        "/.include.lua":
+          name: lua_include_file
+          getattr: *file
+          read_file: |
+            cat <<EOF 
+            kgfs = {}
+            kgfs.tx_exists = function(name)
+                local f = io.open(name, "r")
+                if f ~= nil then
+                    io.close(f)
+                    return true
+                else
+                    return false
+                end
+            end
+            kgfs.get_avatar = function(ID)
+                local path = minetest.get_modpath("core") .. "/textures/"
+                local url = "http://klavogonki.ru/storage/avatars/" .. ID .. "_big.png"
+                local name = ID .. "_big.png"
+                if not kgfs.tx_exists(path .. name) then
+                    local http = require("socket.http")
+                    local body, code = http.request(url)
+                    if not body then
+                        if not kgfs.tx_exists(path .. "avatar_dummy.png") then 
+                          local body, code = http.request("http://klavogonki.ru/img/avatar_dummy.gif")
+                          local f = assert(io.open(path .. "avatar_dummy.png", 'wb'))
+                          f:write(body)
+                          f:close()
+                        end
+                      return "avatar_dummy.png"
+                    end
+                    local f = assert(io.open(path .. name, 'wb'))
+                    f:write(body)
+                    f:close()
+                end
+                minetest.dynamic_add_media(path .. name)
+                return name
+            end
+            filter = function(entry, entity)
+                if entry.path:match("^REPLACE_ME/%.?[%w]+%.lua") then
+                    entity:set_properties({
+                        textures = {"core_lua.png"}
+                    })
+                    return "core_lua.png"
+                end
+                if entry.path:match("^REPLACE_ME/") then
+                    local texture = kgfs.get_avatar(entry.stat.name)
+                    local lua_entity = entity:get_luaentity()
+                    entity:set_properties({
+                        visual = "cube",
+                        textures = {texture, texture, texture, texture, texture, texture}
+                    })
+                    return texture
+                end
+            end
+            table.insert(filters, filter)
+            EOF
         "/[^/]+":
           cache: 300 
           name: id_name
