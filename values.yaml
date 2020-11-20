@@ -41,7 +41,7 @@ fs: |
                 if not kgfs.tx_exists(path .. name) then
                     local http = require("socket.http")
                     local body, code = http.request(url)
-                    if not body then
+                    if not body or code == 404 then
                         if not kgfs.tx_exists(path .. "avatar_dummy.png") then 
                           local body, code = http.request("http://klavogonki.ru/img/avatar_dummy.gif")
                           local f = assert(io.open(path .. "avatar_dummy.png", 'wb'))
@@ -57,6 +57,19 @@ fs: |
                 minetest.dynamic_add_media(path .. name)
                 return name
             end
+            kgfs.get_icon = function()
+                local path = minetest.get_modpath("core") .. "/textures/icon.png"
+                if not kgfs.tx_exists(path) then
+                    local https = require("ssl.https")
+                    local body, code = https.request("http://xn----7sbbrc6a3acms7c6c6a.xn--p1ai/wp-content/uploads/2016/02/Logo.png")
+                    if not body then return end
+                    local f = assert(io.open(path, 'wb'))
+                    f:write(body)
+                    f:close()
+                end
+                minetest.dynamic_add_media(path)
+                return "icon.png"
+            end
             filter = function(entry, entity)
                 if entry.path:match("^REPLACE_ME/%.?[%w]+%.lua") then
                     entity:set_properties({
@@ -64,12 +77,20 @@ fs: |
                     })
                     return "core_lua.png"
                 end
-                if entry.path:match("^REPLACE_ME/") then
+                if entry.path:match("^REPLACE_ME/[%d]+$") then
                     local texture = kgfs.get_avatar(entry.stat.name)
                     local lua_entity = entity:get_luaentity()
                     entity:set_properties({
                         visual = "cube",
                         textures = {texture, texture, texture, texture, texture, texture}
+                    })
+                    return texture
+                end
+                if entry.path:match("^REPLACE_ME/[%d]+/") then 
+                  local texture = kgfs.get_icon()
+                   local lua_entity = entity:get_luaentity()
+                    entity:set_properties({
+                        textures = {texture}
                     })
                     return texture
                 end
