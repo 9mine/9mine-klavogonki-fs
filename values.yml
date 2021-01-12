@@ -14,15 +14,19 @@ fs: |
     fs:
       "/":
         cache: 300 
-        getattr: *dir
-        readdir: | 
+        getattr: 
+          sh: *dir
+        readdir: 
+         sh: | 
           cat<<EOF | nodejs |  grep 'href=' | awk 'match($0,/showProfile\([[:digit:]]+\)/) { print substr($0,RSTART+12,RLENGTH-13)}'
           const puppeteer = require('puppeteer'); (async () => { try { const browser = await puppeteer.launch({ args: ['--lang=ru-RU,ru', '--no-sandbox'] }); const page = await browser.newPage(); await page.goto("http://klavogonki.ru"); await page.waitForSelector('.ng-binding', 0); const body = await page.evaluate(() => { return document.getElementById("top_today").innerHTML; }); process.stdout.write(body); await browser.close(); } catch (error) { console.log(error); }; })();
           EOF
         "/.include.lua":
           name: lua_include_file
-          getattr: *file
-          read_file: |
+          getattr: 
+            sh: *file
+          read_file: 
+           sh: |
             cat <<EOF 
             kgfs = {}
             kgfs.tx_exists = function(name)
@@ -100,13 +104,17 @@ fs: |
         "/[^/]+":
           cache: 300 
           name: id_name
-          getattr: *dir
-          readdir: curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | .name' | sed 's/ /_/g'
+          getattr:
+            sh: *dir
+          readdir:
+            sh: curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq '.gametypes | .[] | .name' | sed 's/ /_/g'
           "/[^/]+":
             cache: 300 
             name: gametype_name
-            getattr: *file
-            read_file: |
+            getattr:
+              sh: *file
+            read_file: 
+              sh: |
                 newname="$(echo -n ${gametype_name} | sed --expression='s/_/ /g')"
                 curl -s http://klavogonki.ru/api/profile/get-stats-overview?userId=${id_name} | jq --arg name "$newname" '.gametypes | .[] | select(.name == $name)' 
 
